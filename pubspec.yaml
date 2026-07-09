@@ -1,0 +1,59 @@
+name: clipvid
+description: "YouTube to Viral Shorts Clipper — Flutter Web App"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.4.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # HTTP client
+  http: ^1.2.2
+
+  # State management
+  provider: ^6.1.2
+
+  # Video player for clip preview
+  video_player: ^2.8.7
+
+  # Video player UI wrapper
+  chewie: ^1.8.5
+
+  # File download with progress
+  dio: ^5.6.0
+
+  # Path utilities
+  path: ^1.9.0
+
+  # Google Fonts (Inter)
+  google_fonts: ^6.2.1
+
+  # URL launcher (open YouTube links)
+  url_launcher: ^6.3.1
+
+  # Animations
+  flutter_animate: ^4.5.0
+
+  # Icons
+  cupertino_icons: ^1.0.8
+
+  # Loading shimmer
+  shimmer: ^3.0.0
+
+  # Cached network images
+  cached_network_image: ^3.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  # Google Fonts (Inter) are loaded at runtime via the google_fonts package
+  # No local font assets required
+
