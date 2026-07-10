@@ -15,6 +15,12 @@ class UrlInputCard extends StatefulWidget {
 class _UrlInputCardState extends State<UrlInputCard> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focus = FocusNode();
+  String _aspectRatio = '9:16';
+  bool _autoCaptions = false;
+  String _captionFont = 'Arial';
+  int _captionSize = 24;
+  String _captionColor = '#FFFFFF';
+  
   bool _focused = false;
   bool _loading = false;
   String? _error;
@@ -53,7 +59,14 @@ class _UrlInputCardState extends State<UrlInputCard> {
     setState(() { _loading = true; _error = null; });
 
     try {
-      await context.read<ClipProvider>().submitUrl(url);
+      await context.read<ClipProvider>().submitUrl(
+        url,
+        aspectRatio: _aspectRatio,
+        autoCaptions: _autoCaptions,
+        captionFont: _captionFont,
+        captionSize: _captionSize,
+        captionColor: _captionColor,
+      );
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -170,7 +183,202 @@ class _UrlInputCardState extends State<UrlInputCard> {
                 ],
               ),
             ),
+            
+          // Aspect Ratio Selector
+          const Divider(color: AppColors.border, height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              children: [
+                Text('Format:', style: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 14)),
+                const SizedBox(width: 16),
+                _buildRatioChip('9:16', 'Shorts', Icons.crop_portrait),
+                const SizedBox(width: 8),
+                _buildRatioChip('3:4', 'Portrait', Icons.portrait),
+                const SizedBox(width: 8),
+                _buildRatioChip('1:1', 'Square', Icons.crop_square),
+              ],
+            ),
+          ),
+          
+          // Auto-Captions Toggle
+          const Divider(color: AppColors.border, height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.subtitles, color: AppColors.textSecondary, size: 18),
+                    const SizedBox(width: 8),
+                    Text('Add Auto-Captions (Beta)', style: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 14)),
+                  ],
+                ),
+                SizedBox(
+                  height: 30,
+                  child: FittedBox(
+                    fit: BoxFit.fill,
+                    child: Switch(
+                      value: _autoCaptions,
+                      onChanged: (val) => setState(() => _autoCaptions = val),
+                      activeColor: AppColors.accent,
+                      activeTrackColor: AppColors.accent.withAlpha(40),
+                      inactiveThumbColor: AppColors.textMuted,
+                      inactiveTrackColor: AppColors.bgSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Caption Customization (Visible only if autoCaptions is true)
+          if (_autoCaptions) ...[
+            const Divider(color: AppColors.border, height: 1),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              color: AppColors.bgSurface.withAlpha(50),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Caption Style', style: GoogleFonts.inter(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      // Font Family
+                      Expanded(
+                        child: _buildDropdown(
+                          label: 'Font',
+                          value: _captionFont,
+                          items: ['Arial', 'Helvetica', 'Impact', 'Courier New', 'Times New Roman'],
+                          onChanged: (val) => setState(() => _captionFont = val!),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Font Size
+                      Expanded(
+                        child: _buildDropdown<int>(
+                          label: 'Size',
+                          value: _captionSize,
+                          items: [18, 24, 32, 40],
+                          itemLabel: (s) => s == 18 ? 'Small' : s == 24 ? 'Medium' : s == 32 ? 'Large' : 'X-Large',
+                          onChanged: (val) => setState(() => _captionSize = val!),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Color Picker
+                  Row(
+                    children: [
+                      Text('Color:', style: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 13)),
+                      const SizedBox(width: 12),
+                      _buildColorPicker('#FFFFFF', Colors.white),
+                      _buildColorPicker('#FFFF00', Colors.yellow),
+                      _buildColorPicker('#00FF00', Colors.green),
+                      _buildColorPicker('#00FFFF', Colors.cyan),
+                      _buildColorPicker('#FF00FF', Colors.pink),
+                      _buildColorPicker('#FF0000', Colors.red),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildDropdown<T>({
+    required String label,
+    required T value,
+    required List<T> items,
+    required void Function(T?) onChanged,
+    String Function(T)? itemLabel,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 12)),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            color: AppColors.bgSurface,
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<T>(
+              value: value,
+              isExpanded: true,
+              dropdownColor: AppColors.bgCard,
+              icon: const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+              style: GoogleFonts.inter(color: AppColors.textPrimary, fontSize: 13),
+              onChanged: onChanged,
+              items: items.map((T item) {
+                return DropdownMenuItem<T>(
+                  value: item,
+                  child: Text(itemLabel != null ? itemLabel(item) : item.toString()),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildColorPicker(String hex, Color color) {
+    final isSelected = _captionColor == hex;
+    return GestureDetector(
+      onTap: () => setState(() => _captionColor = hex),
+      child: Container(
+        margin: const EdgeInsets.only(right: 8),
+        width: 24,
+        height: 24,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: isSelected ? AppColors.accent : Colors.black26,
+            width: isSelected ? 2 : 1,
+          ),
+          boxShadow: isSelected ? [
+            BoxShadow(color: AppColors.accent.withAlpha(100), blurRadius: 4, spreadRadius: 1)
+          ] : null,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRatioChip(String ratio, String label, IconData icon) {
+    final isSelected = _aspectRatio == ratio;
+    return InkWell(
+      onTap: () => setState(() => _aspectRatio = ratio),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.accent.withAlpha(40) : Colors.transparent,
+          border: Border.all(color: isSelected ? AppColors.accent : AppColors.border),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, size: 14, color: isSelected ? AppColors.accent : AppColors.textMuted),
+            const SizedBox(width: 6),
+            Text('$ratio $label', style: GoogleFonts.inter(
+              fontSize: 12, 
+              color: isSelected ? AppColors.accent : AppColors.textSecondary,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+            )),
+          ],
+        ),
       ),
     );
   }

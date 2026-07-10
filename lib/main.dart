@@ -1,12 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/api_client.dart';
-import 'core/theme.dart';
+import 'providers/auth_provider.dart';
 import 'providers/clip_provider.dart';
-import 'screens/home_screen.dart';
+import 'screens/auth_gate.dart';
 
 void main() {
-  runApp(const ClipVidApp());
+  final apiClient = ApiClient();
+  runApp(
+    MultiProvider(
+      providers: [
+        Provider<ApiClient>.value(value: apiClient),
+        ChangeNotifierProvider(create: (_) => AuthProvider(apiClient)),
+        ChangeNotifierProvider(create: (_) => ClipProvider(apiClient)),
+      ],
+      child: const ClipVidApp(),
+    ),
+  );
 }
 
 class ClipVidApp extends StatelessWidget {
@@ -14,14 +24,15 @@ class ClipVidApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ClipProvider(ApiClient()),
-      child: MaterialApp(
-        title: 'ClipVid — YouTube to Viral Shorts',
-        debugShowCheckedModeBanner: false,
-        theme: buildAppTheme(),
-        home: const HomeScreen(),
+    return MaterialApp(
+      title: 'ClipVid — YouTube to Viral Shorts',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        primarySwatch: Colors.deepPurple,
+        scaffoldBackgroundColor: Colors.black,
       ),
+      home: const AuthGate(),
     );
   }
 }

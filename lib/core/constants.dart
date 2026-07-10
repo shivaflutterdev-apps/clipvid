@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 class AppColors {
   // Primary gradient — electric blue to violet
   static const Color primaryStart = Color(0xFF2E90FA);
+  static const Color primary   = Color(0xFF2E90FA);
   static const Color primaryEnd   = Color(0xFF9B8AFB);
 
   // Backgrounds (dark cinematic)

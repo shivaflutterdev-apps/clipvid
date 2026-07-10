@@ -4,9 +4,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../core/constants.dart';
 import '../providers/clip_provider.dart';
+import '../providers/auth_provider.dart';
 import '../widgets/url_input_card.dart';
+import '../widgets/stt_card.dart';
+import '../widgets/tts_card.dart';
 import 'processing_screen.dart';
 import 'results_screen.dart';
+import 'auth_gate.dart';
+import 'history_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -28,8 +33,15 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _HomeContent extends StatelessWidget {
+class _HomeContent extends StatefulWidget {
   const _HomeContent();
+
+  @override
+  State<_HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<_HomeContent> {
+  int _selectedTabIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -56,12 +68,47 @@ class _HomeContent extends StatelessWidget {
               child: Column(
                 children: [
                   _buildNavBar(context),
-                  _buildHero(context),
-                  _buildHowItWorks(),
+                  _buildTabs(),
+                  if (_selectedTabIndex == 0) _buildHero(context),
+                  if (_selectedTabIndex == 1) _buildSttHero(context),
+                  if (_selectedTabIndex == 2) _buildTtsHero(context),
+                  if (_selectedTabIndex == 0) _buildHowItWorks(),
                   _buildFooter(),
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabs() {
+    return Container(
+      margin: const EdgeInsets.only(top: 20, bottom: 40),
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(30),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _TabButton(
+            title: '🎬 Video to Shorts',
+            isSelected: _selectedTabIndex == 0,
+            onTap: () => setState(() => _selectedTabIndex = 0),
+          ),
+          _TabButton(
+            title: '🎙️ Audio to Text',
+            isSelected: _selectedTabIndex == 1,
+            onTap: () => setState(() => _selectedTabIndex = 1),
+          ),
+          _TabButton(
+            title: '🔊 Text to Audio',
+            isSelected: _selectedTabIndex == 2,
+            onTap: () => setState(() => _selectedTabIndex = 2),
           ),
         ],
       ),
@@ -97,18 +144,37 @@ class _HomeContent extends StatelessWidget {
 
           const Spacer(),
 
-          // Nav links
-          ...[('How it works', () {}), ('GitHub', () {})].map((item) =>
-            Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: TextButton(
-                onPressed: item.$2,
-                child: Text(item.$1,
-                  style: GoogleFonts.inter(
-                    color: AppColors.textSecondary, fontSize: 14, fontWeight: FontWeight.w500,
-                  )),
-              ),
-            )).toList(),
+          // Auth info and links
+          Consumer<AuthProvider>(
+            builder: (context, auth, _) {
+              if (!auth.isLoggedIn) return const SizedBox.shrink();
+              return Row(
+                children: [
+                  Text('Hi, ${auth.currentUser?.name ?? "User"}',
+                    style: GoogleFonts.inter(color: Colors.white70)),
+                  const SizedBox(width: 16),
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => const HistoryScreen()));
+                    },
+                    icon: const Icon(Icons.history, size: 18, color: Colors.white),
+                    label: const Text('History', style: TextStyle(color: Colors.white)),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: () {
+                      auth.logout();
+                      Navigator.of(context).pushReplacement(MaterialPageRoute(
+                          builder: (_) => const AuthGate()));
+                    },
+                    icon: const Icon(Icons.logout, size: 18, color: Colors.white70),
+                    label: const Text('Logout', style: TextStyle(color: Colors.white70)),
+                  ),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
@@ -190,11 +256,31 @@ class _HomeContent extends StatelessWidget {
               _trustBadge(Icons.lock_outline,       'Free to use'),
               _trustBadge(Icons.flash_on,            'AI-powered scoring'),
               _trustBadge(Icons.download,            'Instant download'),
-              _trustBadge(Icons.aspect_ratio,        '9:16 vertical format'),
+              _trustBadge(Icons.aspect_ratio,        'Multiple export formats'),
             ],
           ).animate().fadeIn(delay: 700.ms),
         ],
       ),
+    );
+  }
+
+  Widget _buildSttHero(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 800),
+        child: const SttCard(),
+      ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0),
+    );
+  }
+
+  Widget _buildTtsHero(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 800),
+        child: const TtsCard(),
+      ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0),
     );
   }
 
@@ -214,7 +300,7 @@ class _HomeContent extends StatelessWidget {
     final steps = [
       (Icons.link, 'Paste URL', 'Drop any YouTube link'),
       (Icons.auto_awesome, 'AI Analyzes', 'GPT-4o-mini scores viral moments'),
-      (Icons.content_cut, 'Clips Created', 'FFmpeg cuts 9:16 vertical shorts'),
+      (Icons.content_cut, 'Clips Created', 'FFmpeg cuts video to your chosen format'),
       (Icons.download, 'Download', 'Save clips instantly'),
     ];
 
@@ -360,6 +446,40 @@ class _GlowBlob extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: color,
+      ),
+    );
+  }
+}
+
+class _TabButton extends StatelessWidget {
+  final String title;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _TabButton({
+    required this.title,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.bgDark : Colors.transparent,
+          borderRadius: BorderRadius.circular(24),
+          border: isSelected ? Border.all(color: AppColors.borderHover) : null,
+        ),
+        child: Text(
+          title,
+          style: GoogleFonts.inter(
+            color: isSelected ? AppColors.textPrimary : AppColors.textMuted,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
       ),
     );
   }

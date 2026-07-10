@@ -17,6 +17,7 @@ class ClipProvider extends ChangeNotifier {
   int           _progress    = 0;
   String        _jobStatus   = '';    // raw backend status string
   String        _videoTitle  = '';
+  String        _aspectRatio = '9:16';
   String        _errorMsg    = '';
   List<ClipItem> _clips      = [];
   Timer?        _pollTimer;
@@ -28,6 +29,7 @@ class ClipProvider extends ChangeNotifier {
   int            get progress   => _progress;
   String         get jobStatus  => _jobStatus;
   String         get videoTitle => _videoTitle;
+  String         get aspectRatio=> _aspectRatio;
   String         get errorMsg   => _errorMsg;
   List<ClipItem> get clips      => _clips;
   bool           get isIdle      => _appState == AppState.idle;
@@ -41,10 +43,16 @@ class ClipProvider extends ChangeNotifier {
     int? maxClips,
     int? minDurationSec,
     int? maxDurationSec,
+    String aspectRatio = '9:16',
+    bool autoCaptions = false,
+    String captionFont = 'Arial',
+    int captionSize = 24,
+    String captionColor = '#FFFFFF',
   }) async {
     _reset();
     _appState  = AppState.processing;
     _statusMsg = 'Submitting job...';
+    _aspectRatio = aspectRatio;
     notifyListeners();
 
     try {
@@ -53,6 +61,11 @@ class ClipProvider extends ChangeNotifier {
         maxClips:      maxClips,
         minDurationSec:minDurationSec,
         maxDurationSec:maxDurationSec,
+        aspectRatio:   aspectRatio,
+        autoCaptions:  autoCaptions,
+        captionFont:   captionFont,
+        captionSize:   captionSize,
+        captionColor:  captionColor,
       );
       _startPolling();
     } catch (e) {
@@ -99,8 +112,9 @@ class ClipProvider extends ChangeNotifier {
   Future<void> _fetchResults() async {
     try {
       final results = await _api.getResults(_jobId);
-      _clips    = results.clips;
-      _appState = AppState.done;
+      _clips       = results.clips;
+      _aspectRatio = results.aspectRatio;
+      _appState    = AppState.done;
       notifyListeners();
     } catch (e) {
       _appState = AppState.failed;
@@ -129,6 +143,7 @@ class ClipProvider extends ChangeNotifier {
     _progress   = 0;
     _jobStatus  = '';
     _videoTitle = '';
+    _aspectRatio= '9:16';
     _errorMsg   = '';
     _clips      = [];
   }
@@ -140,7 +155,7 @@ class ClipProvider extends ChangeNotifier {
   }
 
   // ── URL helpers ───────────────────────────────────────────────────────────────
-  String thumbnailUrl(ClipItem clip) => _api.thumbnailUrl(_jobId, clip.thumbnailFilename);
-  String downloadUrl(ClipItem clip)  => _api.downloadUrl(_jobId, clip.filename);
+  String thumbnailUrl(ClipItem clip) => clip.thumbnailUrl;
+  String downloadUrl(ClipItem clip)  => clip.downloadUrl;
   String streamUrl(ClipItem clip)    => _api.streamUrl(_jobId, clip.filename);
 }

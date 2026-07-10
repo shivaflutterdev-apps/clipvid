@@ -1,14 +1,59 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 /// Centralised HTTP client for all backend API calls.
 class ApiClient {
-  // Change this to your Spring Boot backend URL
   static const String baseUrl = 'http://localhost:8080';
 
   final http.Client _client;
+  String? _token;
 
   ApiClient() : _client = http.Client();
+
+  void setToken(String token) => _token = token;
+  void clearToken() => _token = null;
+
+  Map<String, String> get _headers {
+    final h = {'Content-Type': 'application/json'};
+    if (_token != null) h['Authorization'] = 'Bearer $_token';
+    return h;
+  }
+
+  // ── Auth ────────────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> login(String email, String password) async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/api/auth/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'password': password}),
+    );
+    if (res.statusCode == 200) return jsonDecode(res.body);
+    throw ApiException(_parseError(res), res.statusCode);
+  }
+
+  Future<Map<String, dynamic>> register(String email, String password, String name) async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/api/auth/register'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'password': password, 'name': name}),
+    );
+    if (res.statusCode == 201) return jsonDecode(res.body);
+    throw ApiException(_parseError(res), res.statusCode);
+  }
+
+  Future<dynamic> getCurrentUser() async {
+    final res = await _client.get(
+      Uri.parse('$baseUrl/api/auth/me'),
+      headers: _headers,
+    );
+    if (res.statusCode == 200) return jsonDecode(res.body);
+    throw ApiException('Unauthorized', res.statusCode);
+  }
+
+  Future<void> logout() async {
+    await _client.post(Uri.parse('$baseUrl/api/auth/logout'), headers: _headers);
+  }
 
   // ── Job submission ──────────────────────────────────────────────────────────
 
@@ -19,15 +64,27 @@ class ApiClient {
     int? maxClips,
     int? minDurationSec,
     int? maxDurationSec,
+    String aspectRatio = '9:16',
+    bool autoCaptions = false,
+    String captionFont = 'Arial',
+    int captionSize = 24,
+    String captionColor = '#FFFFFF',
   }) async {
-    final body = <String, dynamic>{'youtubeUrl': youtubeUrl};
+    final body = <String, dynamic>{
+      'youtubeUrl': youtubeUrl,
+      'aspectRatio': aspectRatio,
+      'autoCaptions': autoCaptions,
+      'captionFont': captionFont,
+      'captionSize': captionSize,
+      'captionColor': captionColor,
+    };
     if (maxClips       != null) body['maxClips']       = maxClips;
     if (minDurationSec != null) body['minDurationSec'] = minDurationSec;
     if (maxDurationSec != null) body['maxDurationSec'] = maxDurationSec;
 
     final response = await _client.post(
       Uri.parse('$baseUrl/api/clip'),
-      headers: {'Content-Type': 'application/json'},
+      headers: _headers,
       body: jsonEncode(body),
     );
 
@@ -46,6 +103,7 @@ class ApiClient {
   Future<JobStatusResponse> getStatus(String jobId) async {
     final response = await _client.get(
       Uri.parse('$baseUrl/api/clip/$jobId/status'),
+      headers: _headers,
     );
 
     if (response.statusCode == 200) {
@@ -64,6 +122,7 @@ class ApiClient {
   Future<ClipResultsResponse> getResults(String jobId) async {
     final response = await _client.get(
       Uri.parse('$baseUrl/api/clip/$jobId/results'),
+      headers: _headers,
     );
 
     if (response.statusCode == 200) {
@@ -73,12 +132,59 @@ class ApiClient {
       throw ApiException('Failed to fetch results', response.statusCode);
     }
   }
+  
+  /// Fetch past jobs
+  Future<List<dynamic>> getHistory() async {
+    final response = await _client.get(
+      Uri.parse('$baseUrl/api/clip/history'),
+      headers: _headers,
+    );
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body)['jobs'] as List<dynamic>;
+    }
+    throw ApiException('Failed to load history', response.statusCode);
+  }
 
   // ── Cleanup ──────────────────────────────────────────────────────────────────
 
   /// Delete a job and its files from the server.
   Future<void> deleteJob(String jobId) async {
-    await _client.delete(Uri.parse('$baseUrl/api/clip/$jobId'));
+    await _client.delete(Uri.parse('$baseUrl/api/clip/$jobId'), headers: _headers);
+  }
+
+  // ── Audio Tools ─────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> generateTts(String text) async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/api/audio/tts'),
+      headers: _headers,
+      body: jsonEncode({'text': text}),
+    );
+    if (res.statusCode == 200) {
+      final json = jsonDecode(res.body) as Map<String, dynamic>;
+      // Ensure the URL is absolute
+      final url = json['url'] as String;
+      json['url'] = url.startsWith('http') ? url : '$baseUrl$url';
+      return json;
+    }
+    throw ApiException(_parseError(res), res.statusCode);
+  }
+
+  Future<Map<String, dynamic>> transcribeAudio(Uint8List bytes, String fileName) async {
+    final uri = Uri.parse('$baseUrl/api/audio/stt');
+    final request = http.MultipartRequest('POST', uri);
+    
+    if (_token != null) request.headers['Authorization'] = 'Bearer $_token';
+
+    request.files.add(http.MultipartFile.fromBytes('file', bytes, filename: fileName));
+
+    final streamedResponse = await request.send();
+    final res = await http.Response.fromStream(streamedResponse);
+
+    if (res.statusCode == 200) {
+      return jsonDecode(res.body) as Map<String, dynamic>;
+    }
+    throw ApiException(_parseError(res), res.statusCode);
   }
 
   // ── URL helpers ──────────────────────────────────────────────────────────────
@@ -155,22 +261,25 @@ class ClipResultsResponse {
   final bool             ready;
   final String           jobId;
   final String           videoTitle;
+  final String           aspectRatio;
   final List<ClipItem>   clips;
 
   ClipResultsResponse({
     required this.ready,
     required this.jobId,
     required this.videoTitle,
+    required this.aspectRatio,
     required this.clips,
   });
 
   factory ClipResultsResponse.fromJson(Map<String, dynamic> json) {
     final clipsJson = json['clips'] as List<dynamic>? ?? [];
     return ClipResultsResponse(
-      ready:      json['ready']      as bool?   ?? false,
-      jobId:      json['jobId']      as String? ?? '',
-      videoTitle: json['videoTitle'] as String? ?? '',
-      clips:      clipsJson.map((c) => ClipItem.fromJson(c as Map<String, dynamic>)).toList(),
+      ready:       json['ready']       as bool?   ?? false,
+      jobId:       json['jobId']       as String? ?? '',
+      videoTitle:  json['videoTitle']  as String? ?? '',
+      aspectRatio: json['aspectRatio'] as String? ?? '9:16',
+      clips:       clipsJson.map((c) => ClipItem.fromJson(c as Map<String, dynamic>)).toList(),
     );
   }
 }
@@ -210,9 +319,16 @@ class ClipItem {
       viralScore:        (json['viralScore']        as num?    ?? 0).toDouble(),
       title:             json['title']             as String? ?? 'Viral Clip',
       hook:              json['hook']              as String? ?? '',
-      downloadUrl:       json['downloadUrl']       as String? ?? '',
-      thumbnailUrl:      json['thumbnailUrl']      as String? ?? '',
+      downloadUrl:       _formatUrl(json['downloadUrl'] as String?),
+      thumbnailUrl:      _formatUrl(json['thumbnailUrl'] as String?),
     );
+  }
+
+  static String _formatUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    if (url.startsWith('http')) return url;
+    // Prefix with local backend URL if it's a relative path (e.g. S3 fallback)
+    return 'http://localhost:8080$url';
   }
 
   String formattedDuration() {

@@ -15,6 +15,7 @@ class ClipCard extends StatefulWidget {
   final String   thumbnailUrl;
   final String   streamUrl;
   final String   downloadUrl;
+  final String   aspectRatio;
 
   const ClipCard({
     super.key,
@@ -23,6 +24,7 @@ class ClipCard extends StatefulWidget {
     required this.thumbnailUrl,
     required this.streamUrl,
     required this.downloadUrl,
+    required this.aspectRatio,
   });
 
   @override
@@ -192,10 +194,14 @@ class _ClipCardState extends State<ClipCard> {
   }
 
   Widget _buildMediaSection() {
+    double ratio = 9 / 16;
+    if (widget.aspectRatio == '3:4') ratio = 3 / 4;
+    else if (widget.aspectRatio == '1:1') ratio = 1.0;
+
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       child: AspectRatio(
-        aspectRatio: 9 / 16,
+        aspectRatio: ratio,
         child: Stack(
           fit: StackFit.expand,
           children: [

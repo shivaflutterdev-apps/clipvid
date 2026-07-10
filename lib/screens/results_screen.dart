@@ -184,6 +184,7 @@ class ResultsScreen extends StatelessWidget {
                       thumbnailUrl: provider.thumbnailUrl(clip),
                       streamUrl:    provider.streamUrl(clip),
                       downloadUrl:  provider.downloadUrl(clip),
+                      aspectRatio:  provider.aspectRatio,
                     ).animate().fadeIn(delay: Duration(milliseconds: i * 100 + 200))
                      .slideY(begin: 0.15, end: 0),
                   );
