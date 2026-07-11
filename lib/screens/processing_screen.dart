@@ -20,79 +20,91 @@ class ProcessingScreen extends StatelessWidget {
     return Consumer<ClipProvider>(
       builder: (context, provider, _) {
         return Scaffold(
-          backgroundColor: AppColors.bgDark,
-          body: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Animated logo pulse
-                    _AnimatedLogo().animate(
-                      onPlay: (c) => c.repeat(reverse: true),
-                    ).scaleXY(begin: 0.95, end: 1.05, duration: 1200.ms, curve: Curves.easeInOut),
+          backgroundColor: context.colors.bgDark,
+          body: Stack(
+            children: [
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 560),
+                  child: Padding(
+                    padding: const EdgeInsets.all(32),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Animated logo pulse
+                        _AnimatedLogo().animate(
+                          onPlay: (c) => c.repeat(reverse: true),
+                        ).scaleXY(begin: 0.95, end: 1.05, duration: 1200.ms, curve: Curves.easeInOut),
 
-                    const SizedBox(height: 40),
+                        const SizedBox(height: 40),
 
-                    // Title
-                    Text('Processing Your Video',
-                      style: GoogleFonts.inter(
-                        fontSize: 28, fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      )).animate().fadeIn(delay: 200.ms),
+                        // Title
+                        Text('Processing Your Video',
+                          style: GoogleFonts.inter(
+                            fontSize: 28, fontWeight: FontWeight.w800,
+                            color: context.colors.textPrimary,
+                          )).animate().fadeIn(delay: 200.ms),
 
-                    const SizedBox(height: 8),
+                        const SizedBox(height: 8),
 
-                    // Video title if known
-                    if (provider.videoTitle.isNotEmpty)
-                      Text(provider.videoTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          fontSize: 14, color: AppColors.textSecondary,
-                        )).animate().fadeIn(delay: 300.ms),
+                        // Video title if known
+                        if (provider.videoTitle.isNotEmpty)
+                          Text(provider.videoTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.inter(
+                              fontSize: 14, color: context.colors.textSecondary,
+                            )).animate().fadeIn(delay: 300.ms),
 
-                    const SizedBox(height: 48),
+                        const SizedBox(height: 48),
 
-                    // Step indicators
-                    ..._steps.asMap().entries.map((e) {
-                      final step = e.value;
-                      return _StepRow(
-                        step:     step,
-                        progress: provider.progress,
-                      ).animate().fadeIn(delay: Duration(milliseconds: e.key * 100 + 300));
-                    }),
+                        // Step indicators
+                        ..._steps.asMap().entries.map((e) {
+                          return _StepRow(
+                            step: e.value,
+                            progress: provider.progress,
+                          ).animate().fadeIn(delay: Duration(milliseconds: e.key * 100 + 300));
+                        }),
 
-                    const SizedBox(height: 40),
+                        const SizedBox(height: 40),
 
-                    // Progress bar
-                    _ProgressBar(progress: provider.progress),
+                        // Progress bar
+                        _ProgressBar(progress: provider.progress),
 
-                    const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                    // Status message
-                    Text(provider.statusMsg,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        fontSize: 14, color: AppColors.textSecondary,
-                      )).animate(key: ValueKey(provider.statusMsg))
-                        .fadeIn(duration: 300.ms),
+                        // Status message
+                        Text(provider.statusMsg,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 14, color: context.colors.textSecondary,
+                          )).animate(key: ValueKey(provider.statusMsg))
+                            .fadeIn(duration: 300.ms),
 
-                    const SizedBox(height: 40),
+                        const SizedBox(height: 40),
 
-                    // Cancel button
-                    TextButton(
-                      onPressed: () => provider.reset(),
-                      child: Text('Cancel',
-                        style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 14)),
+                        // Cancel button
+                        TextButton(
+                          onPressed: () => provider.reset(),
+                          child: Text('Cancel',
+                            style: GoogleFonts.inter(color: context.colors.textMuted, fontSize: 14)),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+              Positioned(
+                top: 48,
+                right: 24,
+                child: IconButton(
+                  onPressed: () => provider.reset(),
+                  icon: Icon(Icons.close, color: context.colors.textMuted),
+                  tooltip: 'Exit to Home',
+                ),
+              ),
+            ],
           ),
         );
       },
@@ -123,18 +135,18 @@ class _StepRow extends StatelessWidget {
     final isDone    = step.isDone(progress);
     final isActive  = step.isActive(progress);
 
-    Color iconBg    = AppColors.bgSurface;
-    Color iconColor = AppColors.textMuted;
-    Color titleColor = AppColors.textMuted;
+    Color iconBg    = context.colors.bgSurface;
+    Color iconColor = context.colors.textMuted;
+    Color titleColor = context.colors.textMuted;
 
     if (isDone) {
-      iconBg    = AppColors.success.withAlpha(30);
-      iconColor = AppColors.success;
-      titleColor = AppColors.textSecondary;
+      iconBg    = context.colors.success.withAlpha(30);
+      iconColor = context.colors.success;
+      titleColor = context.colors.textSecondary;
     } else if (isActive) {
-      iconBg    = AppColors.accent.withAlpha(30);
-      iconColor = AppColors.accent;
-      titleColor = AppColors.textPrimary;
+      iconBg    = context.colors.accent.withAlpha(30);
+      iconColor = context.colors.accent;
+      titleColor = context.colors.textPrimary;
     }
 
     return Padding(
@@ -149,12 +161,12 @@ class _StepRow extends StatelessWidget {
               color: iconBg,
               shape: BoxShape.circle,
               border: Border.all(
-                color: isActive ? AppColors.accent : AppColors.border,
+                color: isActive ? context.colors.accent : context.colors.border,
                 width: isActive ? 2 : 1,
               ),
             ),
             child: isDone
-                ? const Icon(Icons.check_rounded, color: AppColors.success, size: 20)
+                ? Icon(Icons.check_rounded, color: context.colors.success, size: 20)
                 : isActive
                   ? _SpinIcon(step.icon, iconColor)
                   : Icon(step.icon, color: iconColor, size: 20),
@@ -177,7 +189,7 @@ class _StepRow extends StatelessWidget {
                 ),
                 Text(step.desc,
                   style: GoogleFonts.inter(
-                    fontSize: 12, color: AppColors.textMuted,
+                    fontSize: 12, color: context.colors.textMuted,
                   )),
               ],
             ),
@@ -188,13 +200,13 @@ class _StepRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.success.withAlpha(20),
+                color: context.colors.success.withAlpha(20),
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Text('Done',
                 style: GoogleFonts.inter(
                   fontSize: 11, fontWeight: FontWeight.w600,
-                  color: AppColors.success,
+                  color: context.colors.success,
                 )),
             ),
 
@@ -202,13 +214,13 @@ class _StepRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: AppColors.accent.withAlpha(20),
+                color: context.colors.accent.withAlpha(20),
                 borderRadius: BorderRadius.circular(100),
               ),
               child: Text('Running…',
                 style: GoogleFonts.inter(
                   fontSize: 11, fontWeight: FontWeight.w600,
-                  color: AppColors.accent,
+                  color: context.colors.accent,
                 )),
             ),
         ],
@@ -229,11 +241,11 @@ class _ProgressBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Progress',
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
+              style: GoogleFonts.inter(fontSize: 12, color: context.colors.textMuted)),
             Text('$progress%',
               style: GoogleFonts.inter(
                 fontSize: 12, fontWeight: FontWeight.w700,
-                color: AppColors.accent,
+                color: context.colors.accent,
               )),
           ],
         ),
@@ -247,8 +259,8 @@ class _ProgressBar extends StatelessWidget {
             builder: (context, value, _) => LinearProgressIndicator(
               value: value,
               minHeight: 8,
-              backgroundColor: AppColors.border,
-              valueColor: const AlwaysStoppedAnimation(AppColors.accent),
+              backgroundColor: context.colors.border,
+              valueColor: AlwaysStoppedAnimation(context.colors.accent),
             ),
           ),
         ),
@@ -263,15 +275,15 @@ class _AnimatedLogo extends StatelessWidget {
     return Container(
       width: 80, height: 80,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryStart, AppColors.primaryEnd],
+        gradient: LinearGradient(
+          colors: [context.colors.primaryStart, context.colors.primaryEnd],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(22),
         boxShadow: [
           BoxShadow(
-            color: AppColors.accent.withAlpha(80),
+            color: context.colors.accent.withAlpha(80),
             blurRadius: 30,
             spreadRadius: 5,
           ),

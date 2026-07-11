@@ -1,10 +1,20 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+// http://localhost:8080
+//Platform.isAndroid): 'http://10.0.2.2:8080';
+//Oracle: 'http://68.233.104.158:8080';
 
 /// Centralised HTTP client for all backend API calls.
 class ApiClient {
-  static const String baseUrl = 'http://localhost:8080';
+  static String get baseUrl {
+    // Return the Public IP of the Oracle Cloud server
+    // return 'http://10.0.2.2:8080';
+    return 'http://68.233.104.158:8080';
+    // return 'http://localhost:8080';
+  }
+
 
   final http.Client _client;
   String? _token;
@@ -55,6 +65,30 @@ class ApiClient {
     await _client.post(Uri.parse('$baseUrl/api/auth/logout'), headers: _headers);
   }
 
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    final res = await _client.post(
+      Uri.parse('$baseUrl/api/auth/change-password'),
+      headers: _headers,
+      body: jsonEncode({
+        'currentPassword': currentPassword,
+        'newPassword': newPassword
+      }),
+    );
+    if (res.statusCode != 200) {
+      throw ApiException(_parseError(res), res.statusCode);
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    final res = await _client.delete(
+      Uri.parse('$baseUrl/api/auth/account'),
+      headers: _headers,
+    );
+    if (res.statusCode != 200) {
+      throw ApiException(_parseError(res), res.statusCode);
+    }
+  }
+
   // ── Job submission ──────────────────────────────────────────────────────────
 
   /// Submit a YouTube URL for processing.
@@ -69,6 +103,7 @@ class ApiClient {
     String captionFont = 'Arial',
     int captionSize = 24,
     String captionColor = '#FFFFFF',
+    String? language,
   }) async {
     final body = <String, dynamic>{
       'youtubeUrl': youtubeUrl,
@@ -78,6 +113,9 @@ class ApiClient {
       'captionSize': captionSize,
       'captionColor': captionColor,
     };
+    if (language != null && language.trim().isNotEmpty) {
+      body['language'] = language.trim();
+    }
     if (maxClips       != null) body['maxClips']       = maxClips;
     if (minDurationSec != null) body['minDurationSec'] = minDurationSec;
     if (maxDurationSec != null) body['maxDurationSec'] = maxDurationSec;
@@ -328,7 +366,7 @@ class ClipItem {
     if (url == null || url.isEmpty) return '';
     if (url.startsWith('http')) return url;
     // Prefix with local backend URL if it's a relative path (e.g. S3 fallback)
-    return 'http://localhost:8080$url';
+    return '${ApiClient.baseUrl}$url';
   }
 
   String formattedDuration() {

@@ -95,16 +95,16 @@ class _TtsCardState extends State<TtsCard> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.circular(AppRadius.xxl),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Icon(Icons.volume_up, color: AppColors.primary, size: 28),
+              Icon(Icons.volume_up, color: context.colors.primary, size: 28),
               const SizedBox(width: 12),
               Text(
                 'Text to Audio (TTS)',
@@ -119,23 +119,23 @@ class _TtsCardState extends State<TtsCard> {
           const SizedBox(height: 8),
           Text(
             'Type or paste your script below to generate a natural-sounding AI voiceover.',
-            style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 14),
+            style: GoogleFonts.inter(color: context.colors.textMuted, fontSize: 14),
           ),
           const SizedBox(height: 24),
           
           Container(
             decoration: BoxDecoration(
-              color: AppColors.bgDark,
+              color: context.colors.bgDark,
               borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: AppColors.borderHover),
+              border: Border.all(color: context.colors.borderHover),
             ),
             child: TextField(
               controller: _controller,
               maxLines: 6,
-              style: GoogleFonts.inter(color: AppColors.textPrimary),
+              style: GoogleFonts.inter(color: context.colors.textPrimary),
               decoration: InputDecoration(
                 hintText: 'Enter text here...',
-                hintStyle: GoogleFonts.inter(color: AppColors.textMuted.withOpacity(0.5)),
+                hintStyle: GoogleFonts.inter(color: context.colors.textMuted.withOpacity(0.5)),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.all(16),
               ),
@@ -147,25 +147,28 @@ class _TtsCardState extends State<TtsCard> {
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 16),
-              child: Text(_error!, style: GoogleFonts.inter(color: AppColors.error)),
+              child: Text(_error!, style: GoogleFonts.inter(color: context.colors.error)),
             ),
             
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            runSpacing: 16,
             children: [
               if (_audioUrl != null)
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
                       icon: Icon(_isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled),
-                      color: AppColors.primary,
+                      color: context.colors.primary,
                       iconSize: 48,
                       onPressed: _togglePlay,
                     ),
                     TextButton.icon(
                       onPressed: _download,
-                      icon: const Icon(Icons.download, color: AppColors.textPrimary),
-                      label: Text('Download MP3', style: GoogleFonts.inter(color: AppColors.textPrimary)),
+                      icon: Icon(Icons.download, color: context.colors.textPrimary),
+                      label: Text('Download MP3', style: GoogleFonts.inter(color: context.colors.textPrimary)),
                     )
                   ],
                 )
@@ -174,7 +177,7 @@ class _TtsCardState extends State<TtsCard> {
                 
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: context.colors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),

@@ -16,10 +16,12 @@ class _UrlInputCardState extends State<UrlInputCard> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focus = FocusNode();
   String _aspectRatio = '9:16';
+  int _maxClips = 2;
   bool _autoCaptions = false;
   String _captionFont = 'Arial';
   int _captionSize = 24;
   String _captionColor = '#FFFFFF';
+  String _language = '';
   
   bool _focused = false;
   bool _loading = false;
@@ -62,10 +64,12 @@ class _UrlInputCardState extends State<UrlInputCard> {
       await context.read<ClipProvider>().submitUrl(
         url,
         aspectRatio: _aspectRatio,
+        maxClips: _maxClips,
         autoCaptions: _autoCaptions,
         captionFont: _captionFont,
         captionSize: _captionSize,
         captionColor: _captionColor,
+        language: _language,
       );
     } catch (e) {
       if (mounted) {
@@ -82,15 +86,15 @@ class _UrlInputCardState extends State<UrlInputCard> {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 250),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.circular(AppRadius.xxl),
         border: Border.all(
-          color: _focused ? AppColors.accent : AppColors.border,
+          color: _focused ? context.colors.accent : context.colors.border,
           width: _focused ? 2 : 1,
         ),
         boxShadow: _focused
             ? [BoxShadow(
-                color: AppColors.accent.withAlpha(50),
+                color: context.colors.accent.withAlpha(50),
                 blurRadius: 24,
                 spreadRadius: 0,
               )]
@@ -105,7 +109,7 @@ class _UrlInputCardState extends State<UrlInputCard> {
               Padding(
                 padding: const EdgeInsets.only(left: 20),
                 child: Icon(Icons.play_circle_fill,
-                  color: _focused ? AppColors.accent : AppColors.textMuted,
+                  color: _focused ? context.colors.accent : context.colors.textMuted,
                   size: 24),
               ),
 
@@ -115,12 +119,12 @@ class _UrlInputCardState extends State<UrlInputCard> {
                   controller: _controller,
                   focusNode: _focus,
                   style: GoogleFonts.inter(
-                    fontSize: 16, color: AppColors.textPrimary,
+                    fontSize: 16, color: context.colors.textPrimary,
                   ),
                   decoration: InputDecoration(
                     hintText: 'Paste YouTube URL here…',
                     hintStyle: GoogleFonts.inter(
-                      color: AppColors.textMuted, fontSize: 16,
+                      color: context.colors.textMuted, fontSize: 16,
                     ),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
@@ -174,35 +178,124 @@ class _UrlInputCardState extends State<UrlInputCard> {
               padding: const EdgeInsets.only(left: 20, right: 20, bottom: 12),
               child: Row(
                 children: [
-                  const Icon(Icons.error_outline, color: AppColors.error, size: 14),
+                  Icon(Icons.error_outline, color: context.colors.error, size: 14),
                   const SizedBox(width: 6),
                   Text(_error!,
                     style: GoogleFonts.inter(
-                      fontSize: 13, color: AppColors.error,
+                      fontSize: 13, color: context.colors.error,
                     )),
                 ],
               ),
             ),
             
           // Aspect Ratio Selector
-          const Divider(color: AppColors.border, height: 1),
+          Divider(color: context.colors.border, height: 1),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Text('Format:', style: GoogleFonts.inter(color: context.colors.textSecondary, fontSize: 14)),
+                const SizedBox(width: 8),
+                _buildRatioChip('9:16', 'Shorts', Icons.crop_portrait),
+                _buildRatioChip('3:4', 'Portrait', Icons.portrait),
+                _buildRatioChip('1:1', 'Square', Icons.crop_square),
+                _buildRatioChip('16:9', 'Original', Icons.crop_16_9),
+              ],
+            ),
+          ),
+          
+          // Max Clips Selector
+          Divider(color: context.colors.border, height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
               children: [
-                Text('Format:', style: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 14)),
+                Icon(Icons.video_library, color: context.colors.textSecondary, size: 18),
+                const SizedBox(width: 8),
+                Text('Clips to Generate:', style: GoogleFonts.inter(color: context.colors.textSecondary, fontSize: 14)),
                 const SizedBox(width: 16),
-                _buildRatioChip('9:16', 'Shorts', Icons.crop_portrait),
+                Expanded(
+                  child: Container(
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: context.colors.bgDark,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: context.colors.border),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<int>(
+                        value: _maxClips,
+                        isExpanded: true,
+                        dropdownColor: context.colors.bgSurface,
+                        icon: Icon(Icons.arrow_drop_down, color: context.colors.textSecondary),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        style: GoogleFonts.inter(color: context.colors.textPrimary, fontSize: 13),
+                        items: const [
+                          DropdownMenuItem(value: 1, child: Text('1 Clip')),
+                          DropdownMenuItem(value: 2, child: Text('2 Clips')),
+                          DropdownMenuItem(value: 4, child: Text('4 Clips')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) setState(() => _maxClips = val);
+                        },
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Audio Language
+          Divider(color: context.colors.border, height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Row(
+              children: [
+                Icon(Icons.language, color: context.colors.textSecondary, size: 18),
                 const SizedBox(width: 8),
-                _buildRatioChip('3:4', 'Portrait', Icons.portrait),
-                const SizedBox(width: 8),
-                _buildRatioChip('1:1', 'Square', Icons.crop_square),
+                Text('Language (Optional):', style: GoogleFonts.inter(color: context.colors.textSecondary, fontSize: 14)),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Container(
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: context.colors.bgDark,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: context.colors.border),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _language,
+                        isExpanded: true,
+                        dropdownColor: context.colors.bgSurface,
+                        icon: Icon(Icons.arrow_drop_down, color: context.colors.textSecondary),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        style: GoogleFonts.inter(color: context.colors.textPrimary, fontSize: 13),
+                        items: const [
+                          DropdownMenuItem(value: '', child: Text('Auto-Detect')),
+                          DropdownMenuItem(value: 'en', child: Text('English')),
+                          DropdownMenuItem(value: 'te', child: Text('Telugu')),
+                          DropdownMenuItem(value: 'ta', child: Text('Tamil')),
+                          DropdownMenuItem(value: 'hi', child: Text('Hindi')),
+                          DropdownMenuItem(value: 'es', child: Text('Spanish')),
+                        ],
+                        onChanged: (val) {
+                          if (val != null) setState(() => _language = val);
+                        },
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
           
           // Auto-Captions Toggle
-          const Divider(color: AppColors.border, height: 1),
+          Divider(color: context.colors.border, height: 1),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
@@ -210,9 +303,9 @@ class _UrlInputCardState extends State<UrlInputCard> {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.subtitles, color: AppColors.textSecondary, size: 18),
+                    Icon(Icons.subtitles, color: context.colors.textSecondary, size: 18),
                     const SizedBox(width: 8),
-                    Text('Add Auto-Captions (Beta)', style: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 14)),
+                    Text('Add Auto-Captions (Beta)', style: GoogleFonts.inter(color: context.colors.textSecondary, fontSize: 14)),
                   ],
                 ),
                 SizedBox(
@@ -222,10 +315,10 @@ class _UrlInputCardState extends State<UrlInputCard> {
                     child: Switch(
                       value: _autoCaptions,
                       onChanged: (val) => setState(() => _autoCaptions = val),
-                      activeColor: AppColors.accent,
-                      activeTrackColor: AppColors.accent.withAlpha(40),
-                      inactiveThumbColor: AppColors.textMuted,
-                      inactiveTrackColor: AppColors.bgSurface,
+                      activeColor: context.colors.accent,
+                      activeTrackColor: context.colors.accent.withAlpha(40),
+                      inactiveThumbColor: context.colors.textMuted,
+                      inactiveTrackColor: context.colors.bgSurface,
                     ),
                   ),
                 ),
@@ -235,15 +328,15 @@ class _UrlInputCardState extends State<UrlInputCard> {
 
           // Caption Customization (Visible only if autoCaptions is true)
           if (_autoCaptions) ...[
-            const Divider(color: AppColors.border, height: 1),
+            Divider(color: context.colors.border, height: 1),
             AnimatedContainer(
               duration: const Duration(milliseconds: 300),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              color: AppColors.bgSurface.withAlpha(50),
+              color: context.colors.bgSurface.withAlpha(50),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Caption Style', style: GoogleFonts.inter(color: AppColors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
+                  Text('Caption Style', style: GoogleFonts.inter(color: context.colors.textPrimary, fontSize: 14, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 12),
                   Row(
                     children: [
@@ -273,7 +366,7 @@ class _UrlInputCardState extends State<UrlInputCard> {
                   // Color Picker
                   Row(
                     children: [
-                      Text('Color:', style: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 13)),
+                      Text('Color:', style: GoogleFonts.inter(color: context.colors.textSecondary, fontSize: 13)),
                       const SizedBox(width: 12),
                       _buildColorPicker('#FFFFFF', Colors.white),
                       _buildColorPicker('#FFFF00', Colors.yellow),
@@ -302,22 +395,22 @@ class _UrlInputCardState extends State<UrlInputCard> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.inter(color: AppColors.textSecondary, fontSize: 12)),
+        Text(label, style: GoogleFonts.inter(color: context.colors.textSecondary, fontSize: 12)),
         const SizedBox(height: 4),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.colors.border),
             borderRadius: BorderRadius.circular(AppRadius.sm),
-            color: AppColors.bgSurface,
+            color: context.colors.bgSurface,
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<T>(
               value: value,
               isExpanded: true,
-              dropdownColor: AppColors.bgCard,
-              icon: const Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
-              style: GoogleFonts.inter(color: AppColors.textPrimary, fontSize: 13),
+              dropdownColor: context.colors.bgCard,
+              icon: Icon(Icons.arrow_drop_down, color: context.colors.textSecondary),
+              style: GoogleFonts.inter(color: context.colors.textPrimary, fontSize: 13),
               onChanged: onChanged,
               items: items.map((T item) {
                 return DropdownMenuItem<T>(
@@ -344,11 +437,11 @@ class _UrlInputCardState extends State<UrlInputCard> {
           color: color,
           shape: BoxShape.circle,
           border: Border.all(
-            color: isSelected ? AppColors.accent : Colors.black26,
+            color: isSelected ? context.colors.accent : Colors.black26,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected ? [
-            BoxShadow(color: AppColors.accent.withAlpha(100), blurRadius: 4, spreadRadius: 1)
+            BoxShadow(color: context.colors.accent.withAlpha(100), blurRadius: 4, spreadRadius: 1)
           ] : null,
         ),
       ),
@@ -364,17 +457,17 @@ class _UrlInputCardState extends State<UrlInputCard> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.accent.withAlpha(40) : Colors.transparent,
-          border: Border.all(color: isSelected ? AppColors.accent : AppColors.border),
+          color: isSelected ? context.colors.accent.withAlpha(40) : Colors.transparent,
+          border: Border.all(color: isSelected ? context.colors.accent : context.colors.border),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           children: [
-            Icon(icon, size: 14, color: isSelected ? AppColors.accent : AppColors.textMuted),
+            Icon(icon, size: 14, color: isSelected ? context.colors.accent : context.colors.textMuted),
             const SizedBox(width: 6),
             Text('$ratio $label', style: GoogleFonts.inter(
               fontSize: 12, 
-              color: isSelected ? AppColors.accent : AppColors.textSecondary,
+              color: isSelected ? context.colors.accent : context.colors.textSecondary,
               fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
             )),
           ],
@@ -410,15 +503,15 @@ class _GradientButtonState extends State<_GradientButton> {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primaryStart, AppColors.primaryEnd],
+              gradient: LinearGradient(
+                colors: [context.colors.primaryStart, context.colors.primaryEnd],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),
               borderRadius: BorderRadius.circular(AppRadius.xl),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.accent.withAlpha(80),
+                  color: context.colors.accent.withAlpha(80),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),

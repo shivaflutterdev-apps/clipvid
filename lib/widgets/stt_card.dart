@@ -68,7 +68,7 @@ class _SttCardState extends State<SttCard> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Copied to clipboard'),
-          backgroundColor: AppColors.primary,
+          backgroundColor: context.colors.primary,
         ),
       );
     }
@@ -79,16 +79,16 @@ class _SttCardState extends State<SttCard> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.circular(AppRadius.xxl),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.colors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Icon(Icons.mic, color: AppColors.accent, size: 28),
+              Icon(Icons.mic, color: context.colors.accent, size: 28),
               const SizedBox(width: 12),
               Text(
                 'Audio to Text (STT)',
@@ -103,7 +103,7 @@ class _SttCardState extends State<SttCard> {
           const SizedBox(height: 8),
           Text(
             'Upload an audio or video file to extract highly accurate text transcripts using Whisper AI.',
-            style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 14),
+            style: GoogleFonts.inter(color: context.colors.textMuted, fontSize: 14),
           ),
           const SizedBox(height: 24),
           
@@ -115,21 +115,21 @@ class _SttCardState extends State<SttCard> {
                 padding: const EdgeInsets.symmetric(vertical: 40),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(color: AppColors.borderHover, width: 2, style: BorderStyle.solid),
-                  color: AppColors.bgDark,
+                  border: Border.all(color: context.colors.borderHover, width: 2, style: BorderStyle.solid),
+                  color: context.colors.bgDark,
                 ),
                 child: Column(
                   children: [
-                    Icon(Icons.upload_file, size: 48, color: AppColors.accent),
+                    Icon(Icons.upload_file, size: 48, color: context.colors.accent),
                     const SizedBox(height: 12),
                     Text(
                       'Click to browse files',
-                      style: GoogleFonts.inter(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                      style: GoogleFonts.inter(color: context.colors.textPrimary, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       'Supports MP3, WAV, M4A, MP4',
-                      style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12),
+                      style: GoogleFonts.inter(color: context.colors.textMuted, fontSize: 12),
                     ),
                   ],
                 ),
@@ -141,9 +141,9 @@ class _SttCardState extends State<SttCard> {
               padding: const EdgeInsets.all(32.0),
               child: Column(
                 children: [
-                  const CircularProgressIndicator(color: AppColors.accent),
+                  CircularProgressIndicator(color: context.colors.accent),
                   const SizedBox(height: 16),
-                  Text('Transcribing "$_fileName"...', style: GoogleFonts.inter(color: AppColors.textPrimary)),
+                  Text('Transcribing "$_fileName"...', style: GoogleFonts.inter(color: context.colors.textPrimary)),
                 ],
               ),
             ),
@@ -151,20 +151,20 @@ class _SttCardState extends State<SttCard> {
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 16),
-              child: Text(_error!, style: GoogleFonts.inter(color: AppColors.error)),
+              child: Text(_error!, style: GoogleFonts.inter(color: context.colors.error)),
             ),
 
           if (_textResult != null) ...[
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.bgDark,
+                color: context.colors.bgDark,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: AppColors.border),
+                border: Border.all(color: context.colors.border),
               ),
               child: SelectableText(
                 _textResult!,
-                style: GoogleFonts.inter(color: AppColors.textPrimary, height: 1.5),
+                style: GoogleFonts.inter(color: context.colors.textPrimary, height: 1.5),
               ),
             ),
             const SizedBox(height: 16),
@@ -178,13 +178,13 @@ class _SttCardState extends State<SttCard> {
                       _fileName = null;
                     });
                   },
-                  icon: const Icon(Icons.refresh, color: AppColors.textMuted),
-                  label: Text('Upload Another', style: TextStyle(color: AppColors.textMuted)),
+                  icon: Icon(Icons.refresh, color: context.colors.textMuted),
+                  label: Text('Upload Another', style: TextStyle(color: context.colors.textMuted)),
                 ),
                 const SizedBox(width: 12),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: context.colors.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),

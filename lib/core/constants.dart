@@ -1,38 +1,109 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../blocs/theme_bloc/theme_bloc.dart';
+import '../blocs/theme_bloc/theme_state.dart';
 
 /// App-wide color tokens and design constants.
-class AppColors {
-  // Primary gradient — electric blue to violet
-  static const Color primaryStart = Color(0xFF2E90FA);
-  static const Color primary   = Color(0xFF2E90FA);
-  static const Color primaryEnd   = Color(0xFF9B8AFB);
+abstract class AppThemeColors {
+  const AppThemeColors();
 
-  // Backgrounds (dark cinematic)
-  static const Color bgDark       = Color(0xFF0A0B0F);
-  static const Color bgCard       = Color(0xFF12141A);
-  static const Color bgCardHover  = Color(0xFF1A1D28);
-  static const Color bgSurface    = Color(0xFF181B24);
+  // Primary gradient
+  Color get primaryStart;
+  Color get primary;
+  Color get primaryEnd;
+
+  // Backgrounds
+  Color get bgDark;
+  Color get bgCard;
+  Color get bgCardHover;
+  Color get bgSurface;
 
   // Text
-  static const Color textPrimary   = Color(0xFFF2F4F8);
-  static const Color textSecondary = Color(0xFF8B95A9);
-  static const Color textMuted     = Color(0xFF4E5668);
+  Color get textPrimary;
+  Color get textSecondary;
+  Color get textMuted;
 
   // Accent
-  static const Color accent        = Color(0xFF2E90FA);
-  static const Color accentViolet  = Color(0xFF9B8AFB);
-  static const Color success       = Color(0xFF16BA48);
-  static const Color warning       = Color(0xFFFF6B00);
-  static const Color error         = Color(0xFFFF4747);
+  Color get accent;
+  Color get accentViolet;
+  Color get success;
+  Color get warning;
+  Color get error;
 
   // Border
-  static const Color border        = Color(0xFF1F2433);
-  static const Color borderHover   = Color(0xFF2E90FA);
+  Color get border;
+  Color get borderHover;
 
   // Score colors
-  static const Color scoreHigh   = Color(0xFF16BA48);  // 8-10
-  static const Color scoreMid    = Color(0xFFFFA500);  // 5-7.9
-  static const Color scoreLow    = Color(0xFFFF4747);  // <5
+  Color get scoreHigh;
+  Color get scoreMid;
+  Color get scoreLow;
+}
+
+/// The exact same colors you currently have
+class DarkThemeColors extends AppThemeColors {
+  const DarkThemeColors();
+
+  @override Color get primaryStart => const Color(0xFF2E90FA);
+  @override Color get primary      => const Color(0xFF2E90FA);
+  @override Color get primaryEnd   => const Color(0xFF9B8AFB);
+
+  @override Color get bgDark       => const Color(0xFF0A0B0F);
+  @override Color get bgCard       => const Color(0xFF12141A);
+  @override Color get bgCardHover  => const Color(0xFF1A1D28);
+  @override Color get bgSurface    => const Color(0xFF181B24);
+
+  @override Color get textPrimary   => const Color(0xFFF2F4F8);
+  @override Color get textSecondary => const Color(0xFF8B95A9);
+  @override Color get textMuted     => const Color(0xFF4E5668);
+
+  @override Color get accent        => const Color(0xFF2E90FA);
+  @override Color get accentViolet  => const Color(0xFF9B8AFB);
+  @override Color get success       => const Color(0xFF16BA48);
+  @override Color get warning       => const Color(0xFFFF6B00);
+  @override Color get error         => const Color(0xFFFF4747);
+
+  @override Color get border        => const Color(0xFF1F2433);
+  @override Color get borderHover   => const Color(0xFF2E90FA);
+
+  @override Color get scoreHigh     => const Color(0xFF16BA48);
+  @override Color get scoreMid      => const Color(0xFFFFA500);
+  @override Color get scoreLow      => const Color(0xFFFF4747);
+}
+
+/// A beautiful light theme palette
+class LightThemeColors extends AppThemeColors {
+  const LightThemeColors();
+
+  @override Color get primaryStart => const Color(0xFF0052CC); // Deeper blue
+  @override Color get primary      => const Color(0xFF0052CC);
+  @override Color get primaryEnd   => const Color(0xFF6554C0);
+
+  @override Color get bgDark       => const Color(0xFFF4F5F7); // Light gray background
+  @override Color get bgCard       => const Color(0xFFFFFFFF); // White cards
+  @override Color get bgCardHover  => const Color(0xFFFAFBFC);
+  @override Color get bgSurface    => const Color(0xFFFFFFFF);
+
+  @override Color get textPrimary   => const Color(0xFF172B4D); // Dark slate
+  @override Color get textSecondary => const Color(0xFF5E6C84);
+  @override Color get textMuted     => const Color(0xFF8993A4);
+
+  @override Color get accent        => const Color(0xFF0052CC);
+  @override Color get accentViolet  => const Color(0xFF6554C0);
+  @override Color get success       => const Color(0xFF00875A);
+  @override Color get warning       => const Color(0xFFFF991F);
+  @override Color get error         => const Color(0xFFDE350B);
+
+  @override Color get border        => const Color(0xFFDFE1E6);
+  @override Color get borderHover   => const Color(0xFF0052CC);
+
+  @override Color get scoreHigh     => const Color(0xFF00875A);
+  @override Color get scoreMid      => const Color(0xFFFF991F);
+  @override Color get scoreLow      => const Color(0xFFDE350B);
+}
+
+extension ThemeColorsExt on BuildContext {
+  AppThemeColors get colors => watch<ThemeBloc>().state.colors;
 }
 
 /// Spacing constants

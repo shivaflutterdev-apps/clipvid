@@ -12,6 +12,7 @@ import 'processing_screen.dart';
 import 'results_screen.dart';
 import 'auth_gate.dart';
 import 'history_screen.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -48,39 +49,50 @@ class _HomeContentState extends State<_HomeContent> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: context.colors.bgDark,
       body: Stack(
         children: [
           // Background gradient blobs
           Positioned(
             top: -200, left: -150,
-            child: _GlowBlob(color: AppColors.accent.withAlpha(30), size: 600),
+            child: _GlowBlob(color: context.colors.accent.withAlpha(30), size: 600),
           ),
           Positioned(
             bottom: -100, right: -100,
-            child: _GlowBlob(color: AppColors.accentViolet.withAlpha(25), size: 500),
+            child: _GlowBlob(color: context.colors.accentViolet.withAlpha(25), size: 500),
           ),
 
           // Main content
-          SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: size.height),
-              child: Column(
-                children: [
-                  _buildNavBar(context),
+          SafeArea(
+            child: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: size.height),
+                child: Column(
+                  children: [
+                    _buildNavBar(context),
                   _buildTabs(),
-                  if (_selectedTabIndex == 0) _buildHero(context),
-                  if (_selectedTabIndex == 1) _buildSttHero(context),
-                  if (_selectedTabIndex == 2) _buildTtsHero(context),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _buildTabContent(context),
+                  ),
                   if (_selectedTabIndex == 0) _buildHowItWorks(),
                   _buildFooter(),
                 ],
               ),
             ),
           ),
-        ],
+          )],
       ),
     );
+  }
+
+  Widget _buildTabContent(BuildContext context) {
+    switch (_selectedTabIndex) {
+      case 0: return KeyedSubtree(key: const ValueKey(0), child: _buildHero(context));
+      case 1: return KeyedSubtree(key: const ValueKey(1), child: _buildSttHero(context));
+      case 2: return KeyedSubtree(key: const ValueKey(2), child: _buildTtsHero(context));
+      default: return const SizedBox.shrink();
+    }
   }
 
   Widget _buildTabs() {
@@ -88,13 +100,15 @@ class _HomeContentState extends State<_HomeContent> {
       margin: const EdgeInsets.only(top: 20, bottom: 40),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
+        color: context.colors.bgCard,
         borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.colors.border),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           _TabButton(
             title: '🎬 Video to Shorts',
             isSelected: _selectedTabIndex == 0,
@@ -110,14 +124,16 @@ class _HomeContentState extends State<_HomeContent> {
             isSelected: _selectedTabIndex == 2,
             onTap: () => setState(() => _selectedTabIndex = 2),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildNavBar(BuildContext context) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 40, vertical: 20),
       child: Row(
         children: [
           // Logo
@@ -126,8 +142,8 @@ class _HomeContentState extends State<_HomeContent> {
               Container(
                 width: 36, height: 36,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primaryStart, AppColors.primaryEnd],
+                  gradient: LinearGradient(
+                    colors: [context.colors.primaryStart, context.colors.primaryEnd],
                   ),
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -137,7 +153,7 @@ class _HomeContentState extends State<_HomeContent> {
               Text('ClipVid',
                 style: GoogleFonts.inter(
                   fontSize: 20, fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: context.colors.textPrimary,
                 )),
             ],
           ).animate().fadeIn(duration: 400.ms),
@@ -150,27 +166,39 @@ class _HomeContentState extends State<_HomeContent> {
               if (!auth.isLoggedIn) return const SizedBox.shrink();
               return Row(
                 children: [
-                  Text('Hi, ${auth.currentUser?.name ?? "User"}',
-                    style: GoogleFonts.inter(color: Colors.white70)),
-                  const SizedBox(width: 16),
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => const HistoryScreen()));
-                    },
-                    icon: const Icon(Icons.history, size: 18, color: Colors.white),
-                    label: const Text('History', style: TextStyle(color: Colors.white)),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton.icon(
-                    onPressed: () {
-                      auth.logout();
-                      Navigator.of(context).pushReplacement(MaterialPageRoute(
-                          builder: (_) => const AuthGate()));
-                    },
-                    icon: const Icon(Icons.logout, size: 18, color: Colors.white70),
-                    label: const Text('Logout', style: TextStyle(color: Colors.white70)),
-                  ),
+                  if (!isMobile) ...[
+                    Text('Hi, ${auth.currentUser?.name ?? "User"}',
+                      style: GoogleFonts.inter(color: context.colors.textSecondary)),
+                    const SizedBox(width: 16),
+                  ],
+                  if (isMobile)
+                    IconButton(
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => const HistoryScreen()));
+                      },
+                      icon: Icon(Icons.history, size: 20, color: context.colors.textPrimary),
+                    )
+                  else
+                    const SizedBox.shrink(),
+                  SizedBox(width: isMobile ? 0 : 8),
+                  if (isMobile)
+                    IconButton(
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => const SettingsScreen()));
+                      },
+                      icon: Icon(Icons.settings, size: 20, color: context.colors.textSecondary),
+                    )
+                  else
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: (_) => const SettingsScreen()));
+                      },
+                      icon: Icon(Icons.settings, size: 18, color: context.colors.textSecondary),
+                      label: Text('Settings', style: TextStyle(color: context.colors.textSecondary)),
+                    ),
                 ],
               );
             },
@@ -181,6 +209,7 @@ class _HomeContentState extends State<_HomeContent> {
   }
 
   Widget _buildHero(BuildContext context) {
+    final colors = context.colors;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
       child: Column(
@@ -189,18 +218,18 @@ class _HomeContentState extends State<_HomeContent> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.border),
+              border: Border.all(color: context.colors.border),
               borderRadius: BorderRadius.circular(100),
-              color: AppColors.bgCard,
+              color: context.colors.bgCard,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.auto_awesome, color: AppColors.accent, size: 14),
+                Icon(Icons.auto_awesome, color: context.colors.accent, size: 14),
                 const SizedBox(width: 6),
                 Text('Powered by Whisper + GPT-4o-mini',
                   style: GoogleFonts.inter(
-                    color: AppColors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500,
+                    color: context.colors.textSecondary, fontSize: 12, fontWeight: FontWeight.w500,
                   )),
               ],
             ),
@@ -210,8 +239,8 @@ class _HomeContentState extends State<_HomeContent> {
 
           // Headline with gradient
           ShaderMask(
-            shaderCallback: (bounds) => const LinearGradient(
-              colors: [AppColors.primaryStart, AppColors.primaryEnd],
+            shaderCallback: (bounds) => LinearGradient(
+              colors: [colors.primaryStart, colors.primaryEnd],
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
             ).createShader(bounds),
@@ -234,7 +263,7 @@ class _HomeContentState extends State<_HomeContent> {
             'Paste any YouTube URL · AI finds the best moments · Download your clips',
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              fontSize: 18, color: AppColors.textSecondary, height: 1.5,
+              fontSize: 18, color: context.colors.textSecondary, height: 1.5,
             ),
           ).animate().fadeIn(delay: 400.ms),
 
@@ -288,10 +317,10 @@ class _HomeContentState extends State<_HomeContent> {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: AppColors.textMuted, size: 14),
+        Icon(icon, color: context.colors.textMuted, size: 14),
         const SizedBox(width: 6),
         Text(label,
-          style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 13)),
+          style: GoogleFonts.inter(color: context.colors.textMuted, fontSize: 13)),
       ],
     );
   }
@@ -308,10 +337,10 @@ class _HomeContentState extends State<_HomeContent> {
       margin: const EdgeInsets.symmetric(vertical: 40),
       padding: const EdgeInsets.all(48),
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        border: const Border(
-          top:    BorderSide(color: AppColors.border),
-          bottom: BorderSide(color: AppColors.border),
+        color: context.colors.bgCard,
+        border: Border(
+          top:    BorderSide(color: context.colors.border),
+          bottom: BorderSide(color: context.colors.border),
         ),
       ),
       child: Column(
@@ -319,12 +348,12 @@ class _HomeContentState extends State<_HomeContent> {
           Text('How It Works',
             style: GoogleFonts.inter(
               fontSize: 32, fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: context.colors.textPrimary,
             )),
           const SizedBox(height: 8),
           Text('3 steps from long video to viral clips',
             style: GoogleFonts.inter(
-              fontSize: 16, color: AppColors.textSecondary,
+              fontSize: 16, color: context.colors.textSecondary,
             )),
           const SizedBox(height: 48),
 
@@ -351,7 +380,7 @@ class _HomeContentState extends State<_HomeContent> {
     return Padding(
       padding: const EdgeInsets.all(32),
       child: Text('Built with Flutter · Spring Boot · Whisper · FFmpeg · OpenAI',
-        style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 13)),
+        style: GoogleFonts.inter(color: context.colors.textMuted, fontSize: 13)),
     );
   }
 }
@@ -375,9 +404,9 @@ class _StepCard extends StatelessWidget {
       width: 200,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color:  AppColors.bgSurface,
+        color:  context.colors.bgSurface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.colors.border),
       ),
       child: Column(
         children: [
@@ -387,8 +416,8 @@ class _StepCard extends StatelessWidget {
               Container(
                 width: 56, height: 56,
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primaryStart, AppColors.primaryEnd],
+                  gradient: LinearGradient(
+                    colors: [context.colors.primaryStart, context.colors.primaryEnd],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -401,15 +430,15 @@ class _StepCard extends StatelessWidget {
                 child: Container(
                   width: 20, height: 20,
                   decoration: BoxDecoration(
-                    color: AppColors.bgCard,
+                    color: context.colors.bgCard,
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: context.colors.border),
                   ),
                   child: Center(
                     child: Text('$number',
                       style: GoogleFonts.inter(
                         fontSize: 10, fontWeight: FontWeight.w700,
-                        color: AppColors.accent,
+                        color: context.colors.accent,
                       )),
                   ),
                 ),
@@ -420,13 +449,13 @@ class _StepCard extends StatelessWidget {
           Text(title,
             style: GoogleFonts.inter(
               fontSize: 15, fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
+              color: context.colors.textPrimary,
             )),
           const SizedBox(height: 8),
           Text(desc,
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
-              fontSize: 13, color: AppColors.textSecondary, height: 1.4,
+              fontSize: 13, color: context.colors.textSecondary, height: 1.4,
             )),
         ],
       ),
@@ -469,14 +498,14 @@ class _TabButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.bgDark : Colors.transparent,
+          color: isSelected ? context.colors.bgDark : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
-          border: isSelected ? Border.all(color: AppColors.borderHover) : null,
+          border: isSelected ? Border.all(color: context.colors.borderHover) : null,
         ),
         child: Text(
           title,
           style: GoogleFonts.inter(
-            color: isSelected ? AppColors.textPrimary : AppColors.textMuted,
+            color: isSelected ? context.colors.textPrimary : context.colors.textMuted,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
           ),
         ),

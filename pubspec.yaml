@@ -50,6 +50,8 @@ dependencies:
   file_picker: ^11.0.2
   audioplayers: ^6.6.0
   shared_preferences: ^2.5.3
+  flutter_bloc: ^9.1.1
+  equatable: ^2.1.0
 
 dev_dependencies:
   flutter_test:
@@ -61,3 +63,7 @@ flutter:
   # Google Fonts (Inter) are loaded at runtime via the google_fonts package
   # No local font assets required
 
+
+#https://cloud:
+#  oracle:
+#    com/compute/instances/create?region=ap-hyderabad-1:

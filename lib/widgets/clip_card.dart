@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-// Conditional import: uses dart:html on web, stub on other platforms
+import 'package:flutter/foundation.dart';
+import 'package:video_player/video_player.dart';
 import 'video_helper_stub.dart'
     if (dart.library.html) 'video_helper_web.dart';
 import '../core/api_client.dart';
@@ -36,6 +37,7 @@ class _ClipCardState extends State<ClipCard> {
   bool _previewing = false;
   bool _videoRegistered = false;
   late final String _viewId;
+  VideoPlayerController? _vController;
 
   @override
   void initState() {
@@ -43,11 +45,17 @@ class _ClipCardState extends State<ClipCard> {
     _viewId = 'vid-${widget.clip.filename.hashCode.abs()}';
   }
 
+  @override
+  void dispose() {
+    _vController?.dispose();
+    super.dispose();
+  }
+
   Color get _scoreColor {
     final s = widget.clip.viralScore;
-    if (s >= 8) return AppColors.scoreHigh;
-    if (s >= 5) return AppColors.scoreMid;
-    return AppColors.scoreLow;
+    if (s >= 8) return context.colors.scoreHigh;
+    if (s >= 5) return context.colors.scoreMid;
+    return context.colors.scoreLow;
   }
 
   String get _scoreEmoji {
@@ -68,7 +76,7 @@ class _ClipCardState extends State<ClipCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Download failed: $e'),
-            backgroundColor: AppColors.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -76,13 +84,33 @@ class _ClipCardState extends State<ClipCard> {
   }
 
   /// Toggle inline video preview
-  void _togglePreview() {
-    // Register the view factory the first time Play is tapped
-    if (!_videoRegistered) {
-      registerVideoView(_viewId, widget.streamUrl);
-      _videoRegistered = true;
+  void _togglePreview() async {
+    if (kIsWeb) {
+      if (!_videoRegistered) {
+        registerVideoView(_viewId, widget.streamUrl);
+        _videoRegistered = true;
+      }
+      setState(() => _previewing = !_previewing);
+    } else {
+      if (_vController == null) {
+        _vController = VideoPlayerController.networkUrl(
+          Uri.parse(widget.streamUrl),
+          videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
+        );
+        setState(() => _previewing = true);
+        await _vController!.initialize();
+        await _vController!.setVolume(1.0);
+        setState(() {}); // Update to show video now that it's initialized
+        _vController!.play();
+      } else {
+        setState(() => _previewing = !_previewing);
+        if (_previewing) {
+          _vController!.play();
+        } else {
+          _vController!.pause();
+        }
+      }
     }
-    setState(() => _previewing = !_previewing);
   }
 
   @override
@@ -93,16 +121,16 @@ class _ClipCardState extends State<ClipCard> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: _hovered ? AppColors.bgCardHover : AppColors.bgCard,
+          color: _hovered ? context.colors.bgCardHover : context.colors.bgCard,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
             color: _hovered
-                ? AppColors.borderHover.withAlpha(180)
-                : AppColors.border,
+                ? context.colors.borderHover.withAlpha(180)
+                : context.colors.border,
           ),
           boxShadow: _hovered
               ? [BoxShadow(
-                  color: AppColors.accent.withAlpha(25),
+                  color: context.colors.accent.withAlpha(25),
                   blurRadius: 24,
                   offset: const Offset(0, 8),
                 )]
@@ -119,7 +147,7 @@ class _ClipCardState extends State<ClipCard> {
                 children: [
                   // Clip label + viral score
                   Row(children: [
-                    _TagChip(label: 'Clip ${widget.index + 1}', color: AppColors.accent),
+                    _TagChip(label: 'Clip ${widget.index + 1}', color: context.colors.accent),
                     const Spacer(),
                     _ScoreBadge(
                       score: widget.clip.viralScore,
@@ -136,7 +164,7 @@ class _ClipCardState extends State<ClipCard> {
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 15, fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary, height: 1.3,
+                      color: context.colors.textPrimary, height: 1.3,
                     )),
 
                   if (widget.clip.hook.isNotEmpty) ...[
@@ -145,7 +173,7 @@ class _ClipCardState extends State<ClipCard> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.inter(
-                        fontSize: 13, color: AppColors.textSecondary,
+                        fontSize: 13, color: context.colors.textSecondary,
                         fontStyle: FontStyle.italic, height: 1.4,
                       )),
                   ],
@@ -170,7 +198,7 @@ class _ClipCardState extends State<ClipCard> {
                         label:   _previewing ? 'Stop'   : 'Play',
                         colors:  _previewing
                             ? [const Color(0xFF2E2E40), const Color(0xFF2E2E40)]
-                            : [AppColors.accentViolet, AppColors.accent],
+                            : [context.colors.accentViolet, context.colors.accent],
                         onTap:   _togglePreview,
                       ),
                     ),
@@ -179,7 +207,7 @@ class _ClipCardState extends State<ClipCard> {
                       child: _ActionButton(
                         icon:   Icons.download_rounded,
                         label:  'Download',
-                        colors: const [AppColors.primaryStart, AppColors.primaryEnd],
+                        colors: [context.colors.primaryStart, context.colors.primaryEnd],
                         onTap:  _download,
                       ),
                     ),
@@ -197,6 +225,7 @@ class _ClipCardState extends State<ClipCard> {
     double ratio = 9 / 16;
     if (widget.aspectRatio == '3:4') ratio = 3 / 4;
     else if (widget.aspectRatio == '1:1') ratio = 1.0;
+    else if (widget.aspectRatio == '16:9') ratio = 16 / 9;
 
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
@@ -213,16 +242,27 @@ class _ClipCardState extends State<ClipCard> {
                 widget.thumbnailUrl,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
-                  color: AppColors.bgSurface,
-                  child: const Icon(Icons.video_library_outlined,
-                    color: AppColors.textMuted, size: 48),
+                  color: context.colors.bgSurface,
+                  child: Icon(Icons.video_library_outlined,
+                    color: context.colors.textMuted, size: 48),
                 ),
               ),
             ),
 
             // ── HTML5 video player (shown when previewing) ──
-            if (_previewing && _videoRegistered)
+            if (_previewing && kIsWeb && _videoRegistered)
               HtmlElementView(viewType: _viewId),
+
+            // ── Native video player (shown when previewing on desktop/mobile) ──
+            if (_previewing && !kIsWeb && _vController != null)
+              _vController!.value.isInitialized
+                  ? VideoPlayer(_vController!)
+                  : Center(
+                      child: CircularProgressIndicator(
+                        color: context.colors.accent,
+                        strokeWidth: 2,
+                      ),
+                    ),
 
             // ── Gradient overlay ──
             Positioned.fill(
@@ -282,10 +322,10 @@ class _ClipCardState extends State<ClipCard> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: AppColors.accent.withAlpha(220),
+                  color: context.colors.accent.withAlpha(220),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text('9:16',
+                child: Text('${ratio}',
                   style: GoogleFonts.inter(
                     fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
               ),
@@ -408,9 +448,9 @@ class _InfoChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 13, color: AppColors.textMuted),
+      Icon(icon, size: 13, color: context.colors.textMuted),
       const SizedBox(width: 4),
-      Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
+      Text(label, style: GoogleFonts.inter(fontSize: 12, color: context.colors.textMuted)),
     ]);
   }
 }

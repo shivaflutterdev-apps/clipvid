@@ -48,6 +48,7 @@ class ClipProvider extends ChangeNotifier {
     String captionFont = 'Arial',
     int captionSize = 24,
     String captionColor = '#FFFFFF',
+    String? language,
   }) async {
     _reset();
     _appState  = AppState.processing;
@@ -66,6 +67,7 @@ class ClipProvider extends ChangeNotifier {
         captionFont:   captionFont,
         captionSize:   captionSize,
         captionColor:  captionColor,
+        language:      language,
       );
       _startPolling();
     } catch (e) {
@@ -121,6 +123,30 @@ class ClipProvider extends ChangeNotifier {
       _errorMsg = 'Failed to load results: $e';
       notifyListeners();
     }
+  }
+
+  Future<void> loadPastJob(String existingJobId) async {
+    _reset();
+    _jobId = existingJobId;
+    _appState = AppState.processing;
+    _statusMsg = 'Loading historical results...';
+    notifyListeners();
+    await _fetchResults();
+  }
+
+  Future<void> loadPastJobSilently(String existingJobId) async {
+    _reset();
+    _jobId = existingJobId;
+    await _fetchResults();
+  }
+
+  void resumePolling(String existingJobId) {
+    _reset();
+    _jobId = existingJobId;
+    _appState = AppState.processing;
+    _statusMsg = 'Resuming job status...';
+    notifyListeners();
+    _startPolling();
   }
 
   // ── Reset ────────────────────────────────────────────────────────────────────

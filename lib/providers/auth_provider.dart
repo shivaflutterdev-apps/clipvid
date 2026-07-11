@@ -38,8 +38,8 @@ class AuthProvider extends ChangeNotifier {
       // Verify token and update user details in the background
       try {
         final data = await _apiClient.getCurrentUser();
-        _currentUser = UserModel.fromJson(data['user']);
-        await prefs.setString('jwt_user_data', jsonEncode(data['user']));
+        _currentUser = UserModel.fromJson(data);
+        await prefs.setString('jwt_user_data', jsonEncode(data));
         if (_isLoading) {
           _isLoading = false;
         }
@@ -94,6 +94,20 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _apiClient.logout(); // Inform server (optional for stateless JWT)
     } catch (_) {}
+    notifyListeners();
+  }
+
+  Future<void> changePassword(String currentPassword, String newPassword) async {
+    await _apiClient.changePassword(currentPassword, newPassword);
+  }
+
+  Future<void> deleteAccount() async {
+    await _apiClient.deleteAccount();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('jwt_token');
+    await prefs.remove('jwt_user_data');
+    _apiClient.clearToken();
+    _currentUser = null;
     notifyListeners();
   }
 }
